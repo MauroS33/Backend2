@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Productos - Mi Tienda Backend</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f4f4f4;
+      padding: 50px;
+    }
+    h1 {
+      color: #333;
+    }
+    .product-list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .product-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      width: 200px;
+      margin: 10px;
+      padding: 15px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .product-card img {
+      max-width: 100%;
+      height: auto;
+    }
+    .product-card button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .product-card button:hover {
+      background-color: #218838;
+    }
+    .cart-notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #28a745;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      display: none;
+    }
+    .view-cart-btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+    .view-cart-btn:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h1>Productos Disponibles</h1>
+  <div class="product-list" id="productList">
+    <!-- Los productos se cargarán aquí dinámicamente -->
+  </div>
+  <a href="/cart" class="view-cart-btn" id="viewCartBtn" style="display: none;">Ver Carrito</a>
+  <div class="cart-notification" id="cartNotification">Producto agregado al carrito</div>
+
+  <script>
+    // Mostrar notificación
+    function showNotification() {
+      const notification = document.getElementById('cartNotification');
+      notification.style.display = 'block';
+      setTimeout(() => {
+        notification.style.display = 'none';
+      }, 3000); // Ocultar después de 3 segundos
+    }
+
+    // Cargar productos desde el backend
+    fetch('/api/products')
+      .then(response => response.json())
+      .then(products => {
+        const productList = document.getElementById('productList');
+        products.forEach(product => {
+          const productCard = document.createElement('div');
+          productCard.className = 'product-card';
+          productCard.innerHTML = `
+            <img src="${product.image || 'https://via.placeholder.com/150 '}" alt="${product.title}">
+            <h3>${product.title}</h3>
+            <p>${product.description}</p>
+            <p>Precio: $${product.price}</p>
+            <button onclick="addToCart('${product._id}')">Agregar al Carrito</button>
+          `;
+          productList.appendChild(productCard);
+        });
+      })
+      .catch(error => console.error('Error al cargar productos:', error));
+
+    // Agregar producto al carrito
+    function addToCart(productId) {
+      const token = localStorage.getItem('token'); // Obtener el token JWT del almacenamiento local
+      if (!token) {
+        alert('Debes iniciar sesión para agregar productos al carrito.');
+        window.location.href = '/login'; // Redirigir al inicio de sesión
+        return;
+      }
+
+      fetch('/api/cart/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ productId, quantity: 1 })
+      })
+      .then(response => response.json())
+      .then(data => {
+        showNotification(); // Mostrar notificación
+        document.getElementById('viewCartBtn').style.display = 'inline-block'; // Mostrar botón "Ver Carrito"
+      })
+      .catch(error => console.error('Error al agregar al carrito:', error));
+    }
+  </script>
+</body>
+</html>

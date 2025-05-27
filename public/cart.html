@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Carrito - Mi Tienda Backend</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f4f4f4;
+      padding: 50px;
+    }
+    h1 {
+      color: #333;
+    }
+    .cart-items {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .cart-item {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      width: 300px;
+      margin: 10px;
+      padding: 15px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .cart-item img {
+      max-width: 100%;
+      height: auto;
+    }
+    .cart-item button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .cart-item button:hover {
+      background-color: #c82333;
+    }
+    .cart-summary {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #333;
+    }
+    .checkout-btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #28a745;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+    .checkout-btn:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mi Carrito</h1>
+  <div class="cart-items" id="cartItems">
+    <!-- Los productos del carrito se cargarán aquí dinámicamente -->
+  </div>
+  <div class="cart-summary" id="cartSummary"></div>
+  <a href="#" class="checkout-btn">Finalizar Compra</a>
+
+  <script>
+    // Cargar el carrito desde el backend
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Debes iniciar sesión para ver tu carrito.');
+      window.location.href = '/login';
+    }
+
+    fetch('/api/cart', {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(response => response.json())
+    .then(data => {
+      const cartItemsContainer = document.getElementById('cartItems');
+      const cartSummary = document.getElementById('cartSummary');
+
+      if (data.items.length === 0) {
+        cartItemsContainer.innerHTML = '<p>Tu carrito está vacío.</p>';
+        cartSummary.innerHTML = '';
+        return;
+      }
+
+      // Mostrar los productos del carrito
+      data.items.forEach(item => {
+        const cartItem = document.createElement('div');
+        cartItem.className = 'cart-item';
+        cartItem.innerHTML = `
+          <img src="${item.product.image || 'https://via.placeholder.com/150 '}" alt="${item.product.title}">
+          <h3>${item.product.title}</h3>
+          <p>Cantidad: ${item.quantity}</p>
+          <p>Precio unitario: $${item.product.price}</p>
+          <p>Total: $${item.quantity * item.product.price}</p>
+          <button onclick="removeFromCart('${item._id}')">Eliminar</button>
+        `;
+        cartItemsContainer.appendChild(cartItem);
+      });
+
+      // Mostrar el resumen del carrito
+      cartSummary.innerHTML = `<strong>Precio Total: $${data.totalPrice}</strong>`;
+    })
+    .catch(error => console.error('Error al cargar el carrito:', error));
+
+    // Eliminar un producto del carrito
+    function removeFromCart(itemId) {
+      const token = localStorage.getItem('token');
+
+      fetch(`/api/cart/remove/${itemId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(response => response.json())
+      .then(data => {
+        alert('Producto eliminado del carrito');
+        window.location.reload(); // Recargar la página para actualizar el carrito
+      })
+      .catch(error => console.error('Error al eliminar del carrito:', error));
+    }
+  </script>
+</body>
+</html>
