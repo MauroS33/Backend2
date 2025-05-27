@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 // Definir el esquema del producto
 const productSchema = new mongoose.Schema({
+
   title: {
     type: String,
     required: true,
@@ -28,10 +29,10 @@ const productSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['remeras', 'buzos', 'pantalones', 'enteritos', 'camisas', 'bermudas'],
+    enum: ['remeras', 'buzos', 'pantalones', 'camisas', 'bermudas'],
     required: true,
   },
-}, { timestamps: true });
+}, { collection: '2025' });
 
 // Crear el modelo
 const Product = mongoose.model('Product', productSchema);
