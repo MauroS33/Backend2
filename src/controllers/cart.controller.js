@@ -1,5 +1,6 @@
 const Cart = require('../models/cart.model');
 const Product = require('../models/product.model');
+const Ticket = require('../models/ticket.model');
 
 // Obtener el carrito del usuario
 exports.getCart = async (req, res) => {
@@ -115,5 +116,64 @@ exports.clearCart = async (req, res) => {
     res.status(200).json({ message: 'Carrito vaciado', cart });
   } catch (error) {
     res.status(500).json({ error: 'Error al vaciar el carrito' });
+  }
+};
+
+// Comprar productos del carrito
+exports.purchaseCart = async (req, res) => {
+  try {
+    const userId = req.user.userId; // ID del usuario autenticado
+
+    // Obtener el carrito del usuario
+    let cart = await Cart.findOne({ user: userId }).populate('items.product');
+    if (!cart || cart.items.length === 0) {
+      return res.status(400).json({ error: 'El carrito está vacío' });
+    }
+
+    // Verificar el stock de los productos
+    for (const item of cart.items) {
+      const product = item.product;
+      if (product.stock < item.quantity) {
+        return res.status(400).json({
+          error: `No hay suficiente stock para el producto "${product.title}"`,
+        });
+      }
+    }
+
+    // Calcular el monto total
+    const totalAmount = cart.items.reduce(
+      (total, item) => total + item.quantity * item.product.price,
+      0
+    );
+
+    // Crear el ticket
+    const ticket = new Ticket({
+      user: userId,
+      products: cart.items.map((item) => ({
+        product: item.product._id,
+        quantity: item.quantity,
+      })),
+      totalAmount,
+    });
+    await ticket.save();
+
+    // Actualizar el stock de los productos
+    for (const item of cart.items) {
+      const product = item.product;
+      product.stock -= item.quantity;
+      await product.save();
+    }
+
+    // Vaciar el carrito
+    cart.items = [];
+    await cart.save();
+
+    res.status(200).json({
+      message: 'Compra realizada exitosamente',
+      ticket,
+    });
+  } catch (error) {
+    console.error('Error durante la compra:', error);
+    res.status(500).json({ error: 'Error al procesar la compra' });
   }
 };
