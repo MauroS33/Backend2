@@ -3,6 +3,7 @@ const { generateResetToken, sendResetEmail } = require('../utils/token.utils'); 
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const UserDTO = require('../dtos/user.dto'); // Importar el DTO
+const logger = require('../utils/logger');
 
 // Registrar un nuevo usuario
 exports.register = async (req, res) => {
@@ -33,25 +34,28 @@ exports.login = async (req, res) => {
     // Buscar al usuario por correo electrónico
     const user = await User.findOne({ email });
     if (!user) {
+      logger.warn(`Intento de inicio de sesión fallido: Usuario no encontrado (${email})`);
       return res.status(400).json({ error: 'Credenciales inválidas' });
     }
 
     // Comparar contraseñas
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
+      logger.warn(`Intento de inicio de sesión fallido: Contraseña incorrecta (${email})`);
       return res.status(400).json({ error: 'Credenciales inválidas' });
     }
 
     // Generar un token JWT
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-    // Enviar el token al cliente
-    res.status(200).json({ 
-      message: '¡Inicio de sesión exitoso!', 
+ logger.info(`Inicio de sesión exitoso para el usuario ${user.email}`);
+    res.status(200).json({
+      message: '¡Inicio de sesión exitoso!',
       token,
-      redirectUrl: '/products' // URL a la que se redirigirá al usuario
+      redirectUrl: '/products',
     });
   } catch (error) {
+    logger.error(`Error durante el inicio de sesión: ${error.message}`);
     res.status(500).json({ error: 'Error al iniciar sesión' });
   }
 };

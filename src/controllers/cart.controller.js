@@ -1,21 +1,25 @@
-const Cart = require('../models/cart.model');
+const cartRepository = require('../repositories/cart.repository');
 const Product = require('../models/product.model');
-const Ticket = require('../models/ticket.model');
+const Ticket = require('../models/product.model');
+const sendEmail = require('../utils/email.utils');
+const logger = require('../utils/logger');
 
 // Obtener el carrito del usuario
 exports.getCart = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    // Buscar o crear el carrito del usuario
-    let cart = await Cart.findOne({ user: userId }).populate('items.product');
+    // Usar el repositorio para obtener o crear el carrito
+    let cart = await cartRepository.getCartByUserId(userId);
     if (!cart) {
-      cart = new Cart({ user: userId, items: [] });
-      await cart.save();
+      cart = await cartRepository.createCart(userId);
+      logger.info(`Carrito creado para el usuario ${userId}`);
     }
 
+    logger.info(`Carrito obtenido para el usuario ${userId}`);
     res.status(200).json(cart);
   } catch (error) {
+    logger.error(`Error al obtener el carrito para el usuario ${req.user.userId}: ${error.message}`);
     res.status(500).json({ error: 'Error al obtener el carrito' });
   }
 };
@@ -29,26 +33,17 @@ exports.addToCart = async (req, res) => {
     // Validar que el producto exista
     const product = await Product.findById(productId);
     if (!product) {
+      logger.warn(`Intento de agregar producto fallido: Producto no encontrado (${productId})`);
       return res.status(404).json({ error: 'Producto no encontrado' });
     }
 
-    // Buscar o crear el carrito del usuario
-    let cart = await Cart.findOne({ user: userId });
-    if (!cart) {
-      cart = new Cart({ user: userId, items: [] });
-    }
+    // Usar el repositorio para agregar el producto al carrito
+    await cartRepository.addProductToCart(userId, productId, quantity);
 
-    // Verificar si el producto ya está en el carrito
-    const existingItem = cart.items.find(item => item.product.toString() === productId);
-    if (existingItem) {
-      existingItem.quantity += quantity || 1;
-    } else {
-      cart.items.push({ product: productId, quantity: quantity || 1 });
-    }
-
-    await cart.save();
-    res.status(200).json({ message: 'Producto agregado al carrito', cart });
+    logger.info(`Producto agregado al carrito por el usuario ${userId}: Producto ID ${productId}`);
+    res.status(200).json({ message: 'Producto agregado al carrito' });
   } catch (error) {
+    logger.error(`Error al agregar producto al carrito para el usuario ${userId}: ${error.message}`);
     res.status(500).json({ error: 'Error al agregar el producto al carrito' });
   }
 };
@@ -59,22 +54,27 @@ exports.updateCartItem = async (req, res) => {
     const userId = req.user.userId;
     const { itemId, quantity } = req.body;
 
-    // Buscar el carrito del usuario
-    const cart = await Cart.findOne({ user: userId });
+    // Buscar el carrito del usuario usando el repositorio
+    const cart = await cartRepository.getCartByUserId(userId);
     if (!cart) {
+      logger.warn(`Intento de actualizar carrito fallido: Carrito no encontrado para el usuario ${userId}`);
       return res.status(404).json({ error: 'Carrito no encontrado' });
     }
 
     // Encontrar el producto en el carrito
     const item = cart.items.id(itemId);
     if (!item) {
+      logger.warn(`Intento de actualizar carrito fallido: Producto no encontrado en el carrito (${itemId})`);
       return res.status(404).json({ error: 'Producto no encontrado en el carrito' });
     }
 
     item.quantity = quantity;
     await cart.save();
+
+    logger.info(`Cantidad actualizada en el carrito para el usuario ${userId}: Producto ID ${itemId}`);
     res.status(200).json({ message: 'Cantidad actualizada', cart });
   } catch (error) {
+    logger.error(`Error al actualizar el carrito para el usuario ${userId}: ${error.message}`);
     res.status(500).json({ error: 'Error al actualizar el carrito' });
   }
 };
@@ -85,17 +85,21 @@ exports.removeFromCart = async (req, res) => {
     const userId = req.user.userId;
     const { itemId } = req.params;
 
-    // Buscar el carrito del usuario
-    const cart = await Cart.findOne({ user: userId });
+    // Buscar el carrito del usuario usando el repositorio
+    const cart = await cartRepository.getCartByUserId(userId);
     if (!cart) {
+      logger.warn(`Intento de eliminar producto fallido: Carrito no encontrado para el usuario ${userId}`);
       return res.status(404).json({ error: 'Carrito no encontrado' });
     }
 
     // Eliminar el producto del carrito
     cart.items.pull(itemId);
     await cart.save();
+
+    logger.info(`Producto eliminado del carrito por el usuario ${userId}: Producto ID ${itemId}`);
     res.status(200).json({ message: 'Producto eliminado del carrito', cart });
   } catch (error) {
+    logger.error(`Error al eliminar producto del carrito para el usuario ${userId}: ${error.message}`);
     res.status(500).json({ error: 'Error al eliminar el producto del carrito' });
   }
 };
@@ -105,16 +109,13 @@ exports.clearCart = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    // Buscar el carrito del usuario y vaciarlo
-    const cart = await Cart.findOne({ user: userId });
-    if (!cart) {
-      return res.status(404).json({ error: 'Carrito no encontrado' });
-    }
+    // Usar el repositorio para vaciar el carrito
+    await cartRepository.clearCart(userId);
 
-    cart.items = [];
-    await cart.save();
-    res.status(200).json({ message: 'Carrito vaciado', cart });
+    logger.info(`Carrito vaciado por el usuario ${userId}`);
+    res.status(200).json({ message: 'Carrito vaciado' });
   } catch (error) {
+    logger.error(`Error al vaciar el carrito para el usuario ${userId}: ${error.message}`);
     res.status(500).json({ error: 'Error al vaciar el carrito' });
   }
 };
@@ -124,16 +125,20 @@ exports.purchaseCart = async (req, res) => {
   try {
     const userId = req.user.userId; // ID del usuario autenticado
 
-    // Obtener el carrito del usuario
-    let cart = await Cart.findOne({ user: userId }).populate('items.product');
+    // Obtener el carrito del usuario usando el repositorio
+    let cart = await cartRepository.getCartByUserId(userId);
     if (!cart || cart.items.length === 0) {
+      logger.warn(`Compra fallida: Carrito vacío para el usuario ${userId}`);
       return res.status(400).json({ error: 'El carrito está vacío' });
     }
 
     // Verificar el stock de los productos
     for (const item of cart.items) {
-      const product = item.product;
+      const product = await Product.findById(item.product);
       if (product.stock < item.quantity) {
+        logger.warn(
+          `Compra fallida: No hay suficiente stock para el producto "${product.title}" (${product._id})`
+        );
         return res.status(400).json({
           error: `No hay suficiente stock para el producto "${product.title}"`,
         });
@@ -159,21 +164,31 @@ exports.purchaseCart = async (req, res) => {
 
     // Actualizar el stock de los productos
     for (const item of cart.items) {
-      const product = item.product;
+      const product = await Product.findById(item.product);
       product.stock -= item.quantity;
       await product.save();
     }
 
-    // Vaciar el carrito
-    cart.items = [];
-    await cart.save();
+    // Vaciar el carrito usando el repositorio
+    await cartRepository.clearCart(userId);
 
+    // Enviar correo de confirmación
+    const userEmail = req.user.email; // Asumiendo que el email está disponible en el token
+    const subject = 'Compra Exitosa';
+    const html = `
+      <p>¡Gracias por tu compra!</p>
+      <p>Tu ticket de compra ha sido generado con éxito.</p>
+      <p>Total pagado: $${totalAmount}</p>
+    `;
+    await sendEmail(userEmail, subject, html);
+
+    logger.info(`Compra realizada exitosamente por el usuario ${userId}`);
     res.status(200).json({
       message: 'Compra realizada exitosamente',
       ticket,
     });
   } catch (error) {
-    console.error('Error durante la compra:', error);
+    logger.error(`Error durante la compra para el usuario ${userId}: ${error.message}`);
     res.status(500).json({ error: 'Error al procesar la compra' });
   }
 };
