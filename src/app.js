@@ -6,6 +6,9 @@ const cartRoutes = require('./routes/cart.routes');
 
 const app = express();
 
+const mocksRouter = require('./routes/mocks.router');
+app.use('/api/mocks', mocksRouter);
+
 // Middleware
 app.use(express.json());
 
