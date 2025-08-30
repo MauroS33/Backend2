@@ -1,4 +1,4 @@
-/* const Product = require('../models/product.model'); */
+const Product = require('../models/product.model');
 const productRepository = require('../repositories/product.repository');
 
 // Obtener todos los productos
@@ -22,14 +22,19 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// Obtener un producto por ID
+// Obtener un producto por ID 
+const Product = require('../models/product.model');
+
 exports.getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const productId = req.params.id;
+    const product = await Product.findById(productId);
+
     if (!product) {
       return res.status(404).json({ error: 'Producto no encontrado' });
     }
-    res.status(200).json(product);
+
+    res.status(200).json({ product }); // Respuesta en objeto para futuras expansiones
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener el producto' });
   }

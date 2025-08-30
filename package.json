@@ -30,6 +30,7 @@
     "chai-http": "^5.1.2",
     "mocha": "^11.7.1",
     "nodemon": "^3.1.10",
+    "sinon": "^21.0.0",
     "supertest": "^7.1.4"
   },
   "repository": "https://github.com/MauroS33/Backend2.git"

@@ -1,8 +1,8 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
-const app = require('../src/app'); // Importa tu archivo principal de la aplicación
+const app = require('../src/app');
 
-chai.should(); // Usar should para escribir aserciones más legibles
+chai.should(); // Usé should por recomendación
 chai.use(chaiHttp);
 
 describe('Users Router', () => {
