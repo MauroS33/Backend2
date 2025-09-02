@@ -1,7 +1,7 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const sinon = require('sinon'); // Para mocks en tests unitarios
-const app = require('../src/app');
+const app = require('../../src/app');
 const { getProductById } = require('../controllers/product.controller');
 const Product = require('../models/product.model');
 
