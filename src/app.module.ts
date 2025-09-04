@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ProductsModule } from './products/products.module';
+import { AuthModule } from './auth/auth.module';
+import { ProfileModule } from './profile/profile.module'; // Importa el nuevo módulo
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -9,6 +12,9 @@ import { ProductsModule } from './products/products.module';
       useUnifiedTopology: true,
     }),
     ProductsModule,
+    AuthModule,
+    ProfileModule,
+    UsersModule, // Agrega el nuevo módulo aquí
   ],
   controllers: [],
   providers: [],
