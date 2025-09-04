@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "mocha",
+    "test": "jest",
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "build": "nest build"
   },
   "keywords": [],
   "author": "MauroS33 <maurosotelozicari@gmail.com>",
@@ -15,6 +16,7 @@
     "@faker-js/faker": "^9.9.0",
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/passport": "^11.0.5",
+    "@nestjs/swagger": "^11.2.0",
     "@sentry/node": "^10.8.0",
     "@sentry/tracing": "^7.120.4",
     "bcrypt": "^6.0.0",
@@ -29,17 +31,24 @@
     "nodemailer": "^7.0.3",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "swagger-ui-express": "^5.0.1",
     "winston": "^3.17.0"
   },
   "devDependencies": {
+    "@nestjs/mongoose": "^11.0.3",
+    "@nestjs/testing": "^11.1.6",
     "@types/bcrypt": "^6.0.0",
+    "@types/jest": "^30.0.0",
     "@types/passport-jwt": "^4.0.1",
     "chai": "^6.0.1",
     "chai-http": "^5.1.2",
+    "jest": "^30.1.3",
     "mocha": "^11.7.1",
     "nodemon": "^3.1.10",
     "sinon": "^21.0.0",
-    "supertest": "^7.1.4"
+    "supertest": "^7.1.4",
+    "ts-jest": "^29.4.1",
+    "ts-node": "^10.9.2"
   },
   "repository": "https://github.com/MauroS33/Backend2.git"
 }
