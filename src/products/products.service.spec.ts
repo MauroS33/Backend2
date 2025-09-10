@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProductsService } from './products.service';
 import { Model } from 'mongoose';
-import { Product } from './schemas/product.schema'; // Importa la clase Product
+import { Product } from './schemas/product.schema';
 import { getModelToken } from '@nestjs/mongoose';
 
 describe('ProductsService', () => {
@@ -46,19 +46,19 @@ describe('ProductsService', () => {
   });
 
   it('should return all products', async () => {
-    const result = await service.findAll(); // Suponiendo que tienes un método findAll
-    expect(result).toHaveLength(1); // Verifica que se devuelva al menos un producto
+    const result = await service.findAll(); 
+    expect(result).toHaveLength(1); 
   });
 
   it('should create a product', async () => {
-    const newProduct = {
+    const productData = {
       title: 'New Product',
       description: 'This is a new product',
       price: 200,
       stock: 5,
       category: 'buzos',
     };
-    const createdProduct = await service.create(newProduct); // Suponiendo que tienes un método create
-    expect(createdProduct).toEqual(expect.objectContaining(newProduct));
+    const createdProduct = await service.create(newProduct);
+    expect(createdProduct).toEqual(expect.objectContaining(productData));
   });
 });

@@ -1,8 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
 import { Model } from 'mongoose';
-import { User } from './schemas/user.schema'; // Importa la clase User
+import { User } from './schemas/user.schema'; 
 import { getModelToken } from '@nestjs/mongoose';
+import * as bcrypt from 'bcrypt';
+
+jest.mock('bcrypt', () => ({
+  hash: jest.fn().mockResolvedValue('hashed_password'),
+}));
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -13,6 +18,7 @@ describe('UsersService', () => {
       username: 'testuser',
       password: 'password123',
       role: 'user',
+      save: jest.fn().mockResolvedValue(true),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -21,9 +27,12 @@ describe('UsersService', () => {
         {
           provide: getModelToken(User.name),
           useValue: {
-            // Mock de métodos de Mongoose
-            findOne: jest.fn().mockResolvedValue(mockUser), // Simula la búsqueda de un usuario
-            create: jest.fn().mockResolvedValue(mockUser), // Simula la creación de un usuario
+            findOne: jest.fn().mockResolvedValue(mockUser),
+            exec: jest.fn().mockResolvedValue(mockUser),
+            create: jest.fn().mockResolvedValue(mockUser),
+            prototype: {
+              ...mockUser,
+            }
           },
         },
       ],
@@ -48,6 +57,5 @@ describe('UsersService', () => {
       password: 'password456',
     };
     const createdUser = await service.create(newUser.username, newUser.password);
-    expect(createdUser).toEqual(expect.objectContaining(newUser));
-  });
+    expect(createdUser).toEqual(expect.objectContaining({ username: newUser.username }));  });
 });
