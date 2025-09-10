@@ -51,7 +51,7 @@ describe('ProductsService', () => {
   });
 
   it('should create a product', async () => {
-    const productData = {
+    const newProduct = {
       title: 'New Product',
       description: 'This is a new product',
       price: 200,
@@ -59,6 +59,6 @@ describe('ProductsService', () => {
       category: 'buzos',
     };
     const createdProduct = await service.create(newProduct);
-    expect(createdProduct).toEqual(expect.objectContaining(productData));
+    expect(createdProduct).toEqual(expect.objectContaining(newProduct));
   });
 });
